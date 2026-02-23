@@ -8,6 +8,8 @@ test("uploads and lists a PDF", async ({ page }) => {
 
   const fixturePath = path.resolve(__dirname, "../fixtures/sample.pdf");
   await page.locator('input[type="file"]').first().setInputFiles(fixturePath);
+  await expect(page.getByText(/added 1 file to queue/i)).toBeVisible();
+  await page.getByRole("button", { name: /upload queued files/i }).click();
 
   await expect(page.getByText(/uploaded 1 file/i)).toBeVisible();
   const fileCell = page.getByRole("cell", { name: /sample\.pdf/i }).first();

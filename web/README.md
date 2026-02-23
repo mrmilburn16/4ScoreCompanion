@@ -15,6 +15,11 @@ App URL: `http://localhost:3002`
 ## Features
 
 - Drag-and-drop and file-picker uploads
+- Upload queue with explicit controls:
+  - Upload queued files
+  - Retry failed uploads
+  - Cancel in-flight upload
+  - Clear completed queue entries
 - Supported formats: PDF, 4SC, 4SS
 - Upload validation (type, size, count)
 - File library with:

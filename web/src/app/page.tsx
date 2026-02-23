@@ -6,6 +6,7 @@ import { FileLibraryTable } from "@/components/file-library-table";
 import { FilePickerButton } from "@/components/file-picker-button";
 import { ImportGuideSheet } from "@/components/import-guide-sheet";
 import { UploadDropzone } from "@/components/upload-dropzone";
+import { UploadQueue, type UploadQueueItem } from "@/components/upload-queue";
 import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
 import { useFileUpload } from "@/hooks/use-file-upload";
@@ -22,12 +23,26 @@ function buildDownloadUrl(id: string) {
   return `/api/files/${id}/download`;
 }
 
+function fingerprint(file: File) {
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+function buildQueueItem(file: File): UploadQueueItem {
+  return {
+    id: typeof crypto !== "undefined" ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    file,
+    status: "queued",
+  };
+}
+
 export default function Home() {
   const [files, setFiles] = useState<StoredFileRecord[]>([]);
+  const [queue, setQueue] = useState<UploadQueueItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [banner, setBanner] = useState<Banner | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
+  const [activeUploadController, setActiveUploadController] = useState<AbortController | null>(null);
   const { isIOS, isTouchDevice } = useIOSDetection();
   const { isUploading, lastError, uploadFiles } = useFileUpload();
 
@@ -79,46 +94,189 @@ export default function Home() {
   }, [loadFiles]);
 
   const onFilesSelected = useCallback(
-    async (selectedFiles: File[]) => {
+    (selectedFiles: File[]) => {
       if (selectedFiles.length === 0) {
         return;
       }
 
-      try {
-        const result = await uploadFiles(selectedFiles);
+      const seen = new Set(queue.map((item) => fingerprint(item.file)));
+      const additions = selectedFiles
+        .filter((item) => !seen.has(fingerprint(item)))
+        .map(buildQueueItem);
+
+      if (additions.length === 0) {
+        setBanner({
+          tone: "warning",
+          message: "Those files are already in your upload queue.",
+        });
+        return;
+      }
+
+      setQueue((previous) => [...previous, ...additions]);
+      setBanner({
+        tone: "success",
+        message: `Added ${additions.length} file${additions.length === 1 ? "" : "s"} to queue.`,
+      });
+    },
+    [queue],
+  );
+
+  const onUploadQueued = useCallback(async () => {
+    if (isUploading) {
+      return;
+    }
+
+    const queuedItems = queue.filter((item) => item.status === "queued");
+    if (queuedItems.length === 0) {
+      setBanner({
+        tone: "warning",
+        message: "No queued files to upload.",
+      });
+      return;
+    }
+
+    const queuedIds = new Set(queuedItems.map((item) => item.id));
+    setQueue((previous) =>
+      previous.map((item) =>
+        queuedIds.has(item.id)
+          ? {
+              ...item,
+              status: "uploading",
+              message: "Uploading…",
+            }
+          : item,
+      ),
+    );
+
+    const controller = new AbortController();
+    setActiveUploadController(controller);
+
+    try {
+      const result = await uploadFiles(
+        queuedItems.map((item) => item.file),
+        controller.signal,
+      );
+
+      if (result.uploaded.length > 0) {
         await loadFiles();
+      }
 
-        if (result.uploaded.length > 0 && result.rejected.length === 0) {
-          setBanner({
-            tone: "success",
-            message: `Uploaded ${result.uploaded.length} file${result.uploaded.length === 1 ? "" : "s"} successfully.`,
-          });
-          return;
-        }
+      const uploadedPool = [...result.uploaded];
+      const rejectedPool = [...result.rejected];
 
-        if (result.uploaded.length > 0 && result.rejected.length > 0) {
-          setBanner({
-            tone: "warning",
-            message: `Uploaded ${result.uploaded.length} file(s), but ${result.rejected.length} file(s) were rejected.`,
-          });
-          return;
-        }
+      setQueue((previous) =>
+        previous.map((item) => {
+          if (!queuedIds.has(item.id)) {
+            return item;
+          }
 
-        if (result.rejected.length > 0) {
-          setBanner({
-            tone: "error",
-            message: result.rejected[0]?.error ?? "All selected files were rejected.",
-          });
-        }
-      } catch (error) {
+          const uploadedIndex = uploadedPool.findIndex(
+            (uploaded) =>
+              uploaded.originalName === item.file.name && uploaded.size === item.file.size,
+          );
+
+          if (uploadedIndex >= 0) {
+            uploadedPool.splice(uploadedIndex, 1);
+            return {
+              ...item,
+              status: "uploaded",
+              message: "Uploaded successfully.",
+            };
+          }
+
+          const rejectedIndex = rejectedPool.findIndex(
+            (rejected) => rejected.name === item.file.name,
+          );
+          if (rejectedIndex >= 0) {
+            const [rejection] = rejectedPool.splice(rejectedIndex, 1);
+            return {
+              ...item,
+              status: "failed",
+              message: rejection.error,
+            };
+          }
+
+          return {
+            ...item,
+            status: "failed",
+            message: "Upload failed unexpectedly.",
+          };
+        }),
+      );
+
+      if (result.uploaded.length > 0 && result.rejected.length === 0) {
+        setBanner({
+          tone: "success",
+          message: `Uploaded ${result.uploaded.length} file${result.uploaded.length === 1 ? "" : "s"} successfully.`,
+        });
+        return;
+      }
+
+      if (result.uploaded.length > 0 && result.rejected.length > 0) {
+        setBanner({
+          tone: "warning",
+          message: `Uploaded ${result.uploaded.length} file(s), but ${result.rejected.length} file(s) were rejected.`,
+        });
+        return;
+      }
+
+      setBanner({
+        tone: "error",
+        message: result.rejected[0]?.error ?? "Upload failed for all queued files.",
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        setQueue((previous) =>
+          previous.map((item) =>
+            queuedIds.has(item.id) && item.status === "uploading"
+              ? { ...item, status: "cancelled", message: "Upload cancelled." }
+              : item,
+          ),
+        );
+        setBanner({
+          tone: "warning",
+          message: "Upload cancelled.",
+        });
+      } else {
+        const message = error instanceof Error ? error.message : "Upload failed.";
+        setQueue((previous) =>
+          previous.map((item) =>
+            queuedIds.has(item.id) && item.status === "uploading"
+              ? { ...item, status: "failed", message }
+              : item,
+          ),
+        );
         setBanner({
           tone: "error",
-          message: error instanceof Error ? error.message : "Upload failed.",
+          message,
         });
       }
-    },
-    [loadFiles, uploadFiles],
-  );
+    } finally {
+      setActiveUploadController(null);
+    }
+  }, [isUploading, loadFiles, queue, uploadFiles]);
+
+  const onCancelUpload = useCallback(() => {
+    activeUploadController?.abort();
+  }, [activeUploadController]);
+
+  const onRetryFailed = useCallback(() => {
+    setQueue((previous) =>
+      previous.map((item) =>
+        item.status === "failed" || item.status === "cancelled"
+          ? { ...item, status: "queued", message: undefined }
+          : item,
+      ),
+    );
+  }, []);
+
+  const onClearCompleted = useCallback(() => {
+    setQueue((previous) => previous.filter((item) => item.status !== "uploaded"));
+  }, []);
+
+  const onRemoveQueueItem = useCallback((id: string) => {
+    setQueue((previous) => previous.filter((item) => item.id !== id));
+  }, []);
 
   const onDownload = useCallback((file: StoredFileRecord) => {
     setBusy(`download-${file.id}`, true);
@@ -243,6 +401,16 @@ export default function Home() {
         )}
 
         <UploadDropzone onFilesSelected={onFilesSelected} disabled={false} isUploading={isUploading} />
+
+        <UploadQueue
+          items={queue}
+          onUploadQueued={onUploadQueued}
+          onRetryFailed={onRetryFailed}
+          onClearCompleted={onClearCompleted}
+          onRemoveItem={onRemoveQueueItem}
+          onCancelUpload={onCancelUpload}
+          isUploading={isUploading}
+        />
 
         <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
