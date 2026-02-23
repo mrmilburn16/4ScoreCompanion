@@ -12,7 +12,10 @@ test("uploads and lists a PDF", async ({ page, context }) => {
   await expect(page.getByText(/added 1 file to queue/i)).toBeVisible();
   await page.getByRole("button", { name: /upload queued files/i }).click();
 
-  await expect(page.getByText(/uploaded 1 file/i)).toBeVisible();
+  const uploadToast = page.getByRole("status").filter({ hasText: /uploaded 1 file/i });
+  await expect(uploadToast).toBeVisible();
+  await uploadToast.getByRole("button", { name: /dismiss notification/i }).click();
+  await expect(uploadToast).toHaveCount(0);
   const fileCell = page.getByRole("cell", { name: /sample\.pdf/i }).first();
   await expect(fileCell).toBeVisible();
 

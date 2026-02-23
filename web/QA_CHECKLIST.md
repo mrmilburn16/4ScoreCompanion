@@ -35,6 +35,8 @@ This checklist verifies the key interactive controls requested in the implementa
   - Covered by Playwright warning-path assertion in non-shareable browser environment.
 - [x] **Copy Link** works  
   - Covered by Playwright clipboard-permission test and success toast assertion.
+- [x] Toast dismiss action works  
+  - Covered by Playwright test dismissing upload-success toast.
 - [x] **Remove** works  
   - Covered by Playwright remove + success toast assertion.
 - [x] Dialog open/close actions work (`How to import`, `Open import checklist`, `Got it`, Escape/backdrop close support)  
