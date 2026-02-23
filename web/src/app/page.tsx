@@ -175,27 +175,13 @@ export default function Home() {
         await loadFiles();
       }
 
-      const uploadedPool = [...result.uploaded];
       const rejectedPool = [...result.rejected];
+      const hasAnyUploaded = result.uploaded.length > 0;
 
       setQueue((previous) =>
         previous.map((item) => {
           if (!queuedIds.has(item.id)) {
             return item;
-          }
-
-          const uploadedIndex = uploadedPool.findIndex(
-            (uploaded) =>
-              uploaded.originalName === item.file.name && uploaded.size === item.file.size,
-          );
-
-          if (uploadedIndex >= 0) {
-            uploadedPool.splice(uploadedIndex, 1);
-            return {
-              ...item,
-              status: "uploaded",
-              message: "Uploaded successfully.",
-            };
           }
 
           const rejectedIndex = rejectedPool.findIndex(
@@ -207,6 +193,14 @@ export default function Home() {
               ...item,
               status: "failed",
               message: rejection.error,
+            };
+          }
+
+          if (hasAnyUploaded) {
+            return {
+              ...item,
+              status: "uploaded",
+              message: "Uploaded successfully.",
             };
           }
 

@@ -76,3 +76,33 @@ test("shows validation error for unsupported file types", async ({ page }) => {
   await page.getByRole("button", { name: /retry failed/i }).click();
   await expect(page.getByText("Queued", { exact: true })).toBeVisible();
 });
+
+test("supports queue remove and clear-completed controls", async ({ page }) => {
+  await page.goto("/");
+
+  const fixturePath = path.resolve(__dirname, "../fixtures/sample.pdf");
+
+  await page.locator('input[type="file"]').first().setInputFiles(fixturePath);
+  await expect(page.getByRole("heading", { name: /upload queue/i })).toBeVisible();
+
+  const queueSection = page.locator("section", {
+    has: page.getByRole("heading", { name: /upload queue/i }),
+  });
+  await expect(queueSection.getByRole("button", { name: /cancel upload/i })).toBeDisabled();
+  await queueSection.getByRole("button", { name: "Remove" }).click();
+  await expect(page.getByRole("heading", { name: /upload queue/i })).toHaveCount(0);
+
+  await page.locator('input[type="file"]').first().setInputFiles(fixturePath);
+  await page.getByRole("button", { name: /upload queued files/i }).click();
+  await expect(page.getByText(/uploaded 1 file/i)).toBeVisible();
+
+  const queueSectionAfterUpload = page.locator("section", {
+    has: page.getByRole("heading", { name: /upload queue/i }),
+  });
+  const clearCompletedButton = queueSectionAfterUpload.getByRole("button", {
+    name: /clear completed/i,
+  });
+  await expect(clearCompletedButton).toBeEnabled();
+  await clearCompletedButton.click();
+  await expect(page.getByRole("heading", { name: /upload queue/i })).toHaveCount(0);
+});

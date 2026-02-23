@@ -17,8 +17,12 @@ This checklist verifies the key interactive controls requested in the implementa
   - Covered by Playwright tests (`uploads and lists a PDF`, `shows validation error...`).
 - [x] **Retry failed** works  
   - Covered by Playwright unsupported-file test (failed → queued transition).
+- [x] **Queue Remove** works  
+  - Covered by Playwright queue-control test removing queued item.
+- [x] **Clear completed** works  
+  - Covered by Playwright queue-control test (uploaded item removed from queue).
 - [x] **Cancel upload** button state works  
-  - Verified disabled when no active upload (UI state behavior).
+  - Covered by Playwright queue-control test (disabled when no active upload).
 - [x] **Download** works  
   - Covered by Playwright download event assertion.
 - [x] **Share** works/falls back gracefully  
