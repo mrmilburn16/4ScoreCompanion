@@ -50,6 +50,8 @@ npm run test:e2e
 npm run build
 ```
 
+Manual/interaction QA checklist: `./QA_CHECKLIST.md`
+
 ## API routes
 
 - `GET /api/files` — list stored files
