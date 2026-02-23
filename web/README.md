@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# forScore Companion Web App
 
-## Getting Started
+Upload sheet files (PDF, 4SC, 4SS) and send them into forScore using iOS share flows.
 
-First, run the development server:
+## Local development
 
 ```bash
+cd web
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App URL: `http://localhost:3002`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Drag-and-drop and file-picker uploads
+- Supported formats: PDF, 4SC, 4SS
+- Upload validation (type, size, count)
+- File library with:
+  - Download
+  - Native share (when browser supports it)
+  - Copy link
+  - Remove
+- iOS forScore import guidance checklist
 
-## Learn More
+## Why import is user-mediated on iOS
 
-To learn more about Next.js, take a look at the following resources:
+Browsers cannot silently inject files into other iOS apps due to sandboxing.  
+This app implements the best practical flow:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Upload file in web app.
+2. Download or Share file on iOS.
+3. Choose forScore in the iOS share sheet.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Testing
 
-## Deploy on Vercel
+```bash
+npm run lint
+npm run test:unit
+npm run test:e2e
+npm run build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## API routes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `GET /api/files` — list stored files
+- `POST /api/files/upload` — upload one or more files (`files` form-data key)
+- `GET /api/files/:id/download` — download file
+- `DELETE /api/files/:id` — delete file
+
+## Optional iOS companion starter
+
+See `../ios-companion-starter/README.md` for native app starter details.
