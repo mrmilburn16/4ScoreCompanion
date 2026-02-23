@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FileLibraryTable } from "@/components/file-library-table";
 import { FilePickerButton } from "@/components/file-picker-button";
 import { ImportGuideSheet } from "@/components/import-guide-sheet";
+import { PairingSettings } from "@/components/pairing-settings";
 import { UploadDropzone } from "@/components/upload-dropzone";
 import { UploadQueue, type UploadQueueItem } from "@/components/upload-queue";
 import { Button } from "@/components/ui/button";
@@ -450,6 +451,8 @@ export default function Home() {
             isLoading={isLoading}
           />
         </section>
+
+        <PairingSettings notify={notify} />
 
         <footer className="rounded-2xl border border-zinc-200/80 bg-white/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/80 dark:text-zinc-300">
           <p>

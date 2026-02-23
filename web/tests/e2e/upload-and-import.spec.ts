@@ -58,7 +58,7 @@ test("exercises checklist modal and key controls", async ({ page }) => {
   await page.getByRole("button", { name: /^choose files$/i }).click();
   await chooseChooser;
 
-  await page.getByRole("button", { name: /refresh/i }).click();
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
 
   await page.getByLabel("Search files").fill("sample");
   await page.getByLabel("Type").selectOption("pdf");
@@ -165,4 +165,13 @@ test.describe("mobile viewport sanity", () => {
     await expect(page.getByRole("button", { name: "Remove" }).first()).toBeVisible();
     await expect(page.getByText(/sample\.pdf/i).first()).toBeVisible();
   });
+});
+
+test("generates web pairing code in settings section", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: /link an ios device/i })).toBeVisible();
+  await page.getByRole("button", { name: /generate pairing code/i }).click();
+  await expect(page.getByText(/active pairing code/i)).toBeVisible();
+  await expect(page.locator("code")).toContainText("-");
 });

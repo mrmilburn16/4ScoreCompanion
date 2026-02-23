@@ -43,6 +43,8 @@ This checklist verifies the key interactive controls requested in the implementa
   - Covered by Playwright checklist modal tests, including Escape and backdrop close.
 - [x] **Refresh** button works  
   - Covered by Playwright checklist test invoking refresh control.
+- [x] iOS pairing code generation works  
+  - Covered by Playwright pairing settings test (`Generate pairing code` → code visible).
 
 ## Regression command set
 

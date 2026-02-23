@@ -31,6 +31,10 @@ App URL: `http://localhost:3002`
   - Copy link
   - Remove
 - iOS forScore import guidance checklist
+- iOS companion pairing settings:
+  - generate short-lived pairing codes
+  - view/revoke linked devices
+  - mobile token exchange and authenticated file API
 
 ## Why import is user-mediated on iOS
 
@@ -69,6 +73,11 @@ Playwright coverage includes desktop interaction flows and a mobile viewport san
 - `POST /api/files/upload` — upload one or more files (`files` form-data key)
 - `GET /api/files/:id/download` — download file
 - `DELETE /api/files/:id` — delete file
+- `POST /api/pairing/code` — generate pairing code for iOS app
+- `POST /api/pairing/exchange` — exchange pairing code for device token
+- `GET /api/pairing/devices` — list linked devices
+- `DELETE /api/pairing/devices/:id` — revoke linked device
+- `GET /api/mobile/files` — token-authenticated file list for iOS app
 
 ## Optional iOS companion starter
 
