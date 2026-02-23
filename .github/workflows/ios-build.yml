@@ -1,0 +1,40 @@
+name: iOS Build Validation
+
+on:
+  pull_request:
+    paths:
+      - "ios/**"
+      - "web/src/app/api/pairing/**"
+      - "web/src/app/api/mobile/**"
+      - ".github/workflows/ios-build.yml"
+  push:
+    branches:
+      - cursor/**
+    paths:
+      - "ios/**"
+      - "web/src/app/api/pairing/**"
+      - "web/src/app/api/mobile/**"
+      - ".github/workflows/ios-build.yml"
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: List schemes
+        run: xcodebuild -list -project "ios/forScoreCompanion/forScoreCompanion.xcodeproj"
+
+      - name: Build iOS app for simulator
+        run: |
+          xcodebuild \
+            -project "ios/forScoreCompanion/forScoreCompanion.xcodeproj" \
+            -scheme "forScoreCompanion" \
+            -destination "platform=iOS Simulator,name=iPhone 15" \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build

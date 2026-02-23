@@ -3,7 +3,8 @@
 This repository contains:
 
 - `web/` — the production-style web app for uploading files and handing them off to forScore.
-- `ios-companion-starter/` — an optional SwiftUI starter for a native companion app.
+- `ios/forScoreCompanion/` — full SwiftUI Xcode project for native iOS companion app.
+- `ios-companion-starter/` — earlier lightweight starter reference.
 
 ## Quick start (web app)
 
@@ -30,3 +31,9 @@ From `web/`:
 - `npm run test:unit` — Vitest unit tests
 - `npm run test:e2e` — Playwright end-to-end tests
 - `npm run build` — production build
+
+## iOS app
+
+- Open `ios/forScoreCompanion/forScoreCompanion.xcodeproj` in Xcode.
+- Pair using web-generated code from the web app’s **Link an iOS device** settings section.
+- CI build validation is defined at `.github/workflows/ios-build.yml` (macOS runner, `xcodebuild`).

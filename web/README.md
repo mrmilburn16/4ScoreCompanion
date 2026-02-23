@@ -54,6 +54,14 @@ Use a real iPhone/iPad for final handoff validation:
 3. Use Share/Download from the file row.
 4. Pick forScore from the share sheet.
 
+## Web-to-iOS pairing flow
+
+1. Open web app settings section **Link an iOS device**.
+2. Click **Generate pairing code**.
+3. Open iOS app onboarding, enter backend URL + pairing code + device name.
+4. iOS exchanges code with `POST /api/pairing/exchange` and stores returned token.
+5. iOS fetches files through `GET /api/mobile/files` with bearer token.
+
 ## Testing
 
 ```bash
