@@ -39,6 +39,9 @@ export default function Home() {
   const [files, setFiles] = useState<StoredFileRecord[]>([]);
   const [queue, setQueue] = useState<UploadQueueItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [fileTypeFilter, setFileTypeFilter] = useState<"all" | "pdf" | "4sc" | "4ss">("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "size">("newest");
   const [banner, setBanner] = useState<Banner | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
@@ -68,6 +71,33 @@ export default function Home() {
       [key]: busy,
     }));
   };
+
+  const visibleFiles = useMemo(() => {
+    const searchValue = searchQuery.trim().toLowerCase();
+    const filtered = files.filter((file) => {
+      const typeMatch = fileTypeFilter === "all" ? true : file.extension === fileTypeFilter;
+      const searchMatch = searchValue
+        ? file.originalName.toLowerCase().includes(searchValue)
+        : true;
+      return typeMatch && searchMatch;
+    });
+
+    return [...filtered].sort((left, right) => {
+      if (sortBy === "newest") {
+        return new Date(right.uploadedAt).getTime() - new Date(left.uploadedAt).getTime();
+      }
+
+      if (sortBy === "oldest") {
+        return new Date(left.uploadedAt).getTime() - new Date(right.uploadedAt).getTime();
+      }
+
+      if (sortBy === "name") {
+        return left.originalName.localeCompare(right.originalName);
+      }
+
+      return right.size - left.size;
+    });
+  }, [fileTypeFilter, files, searchQuery, sortBy]);
 
   const loadFiles = useCallback(async () => {
     setIsLoading(true);
@@ -424,8 +454,49 @@ export default function Home() {
               </Button>
             </div>
           </div>
+          <div className="grid gap-3 rounded-2xl border border-zinc-200/70 bg-white/80 p-3 dark:border-zinc-800 dark:bg-zinc-950/70 md:grid-cols-[1fr_auto_auto]">
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-300">
+              Search files
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by file name"
+                className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-800 outline-none ring-sky-300 transition focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-300">
+              Type
+              <select
+                value={fileTypeFilter}
+                onChange={(event) =>
+                  setFileTypeFilter(event.target.value as "all" | "pdf" | "4sc" | "4ss")
+                }
+                className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-800 outline-none ring-sky-300 transition focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              >
+                <option value="all">All</option>
+                <option value="pdf">PDF</option>
+                <option value="4sc">4SC</option>
+                <option value="4ss">4SS</option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-300">
+              Sort
+              <select
+                value={sortBy}
+                onChange={(event) =>
+                  setSortBy(event.target.value as "newest" | "oldest" | "name" | "size")
+                }
+                className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-800 outline-none ring-sky-300 transition focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="name">File name (A–Z)</option>
+                <option value="size">Largest file</option>
+              </select>
+            </label>
+          </div>
           <FileLibraryTable
-            files={files}
+            files={visibleFiles}
             onDownload={onDownload}
             onShare={onShare}
             onCopyLink={onCopyLink}

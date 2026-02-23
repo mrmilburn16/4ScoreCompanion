@@ -23,6 +23,7 @@ App URL: `http://localhost:3002`
 - Supported formats: PDF, 4SC, 4SS
 - Upload validation (type, size, count)
 - File library with:
+  - Search, type filtering, and sorting
   - Download
   - Native share (when browser supports it)
   - Copy link
