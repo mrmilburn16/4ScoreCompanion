@@ -77,6 +77,30 @@ test("shows validation error for unsupported file types", async ({ page }) => {
   await expect(page.getByText("Queued", { exact: true })).toBeVisible();
 });
 
+test("cancels an in-flight upload", async ({ page }) => {
+  await page.goto("/");
+
+  const delayedRoute = async (route: Parameters<Parameters<typeof page.route>[1]>[0]) => {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await route.continue();
+  };
+  await page.route("**/api/files/upload", delayedRoute);
+
+  const fixturePath = path.resolve(__dirname, "../fixtures/sample.pdf");
+  await page.locator('input[type="file"]').first().setInputFiles(fixturePath);
+  await expect(page.getByText(/added 1 file to queue/i)).toBeVisible();
+
+  await page.getByRole("button", { name: /upload queued files/i }).click();
+  await expect(page.getByRole("button", { name: /cancel upload/i })).toBeEnabled();
+  await page.getByRole("button", { name: /cancel upload/i }).click();
+
+  await expect(page.getByRole("status").filter({ hasText: /upload cancelled/i })).toBeVisible();
+  await expect(page.getByText("Cancelled", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /cancel upload/i })).toBeDisabled();
+
+  await page.unroute("**/api/files/upload", delayedRoute);
+});
+
 test("supports queue remove and clear-completed controls", async ({ page }) => {
   await page.goto("/");
 
