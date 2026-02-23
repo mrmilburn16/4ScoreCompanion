@@ -62,6 +62,20 @@ test("exercises checklist modal and key controls", async ({ page }) => {
   await page.getByLabel("Sort").selectOption("name");
 });
 
+test("closes checklist via backdrop click and Escape key", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: /how to import into forscore/i }).click();
+  await expect(page.locator('[role="dialog"][aria-hidden="false"]')).toHaveCount(1);
+  await page.locator('[role="dialog"][aria-hidden="false"]').click({ position: { x: 10, y: 10 } });
+  await expect(page.locator('[role="dialog"][aria-hidden="false"]')).toHaveCount(0);
+
+  await page.getByRole("button", { name: /open import checklist/i }).click();
+  await expect(page.locator('[role="dialog"][aria-hidden="false"]')).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await expect(page.locator('[role="dialog"][aria-hidden="false"]')).toHaveCount(0);
+});
+
 test("shows validation error for unsupported file types", async ({ page }) => {
   await page.goto("/");
 

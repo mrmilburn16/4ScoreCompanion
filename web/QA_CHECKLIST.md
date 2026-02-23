@@ -38,7 +38,7 @@ This checklist verifies the key interactive controls requested in the implementa
 - [x] **Remove** works  
   - Covered by Playwright remove + success toast assertion.
 - [x] Dialog open/close actions work (`How to import`, `Open import checklist`, `Got it`, Escape/backdrop close support)  
-  - Covered by Playwright checklist modal test and component behavior.
+  - Covered by Playwright checklist modal tests, including Escape and backdrop close.
 - [x] **Refresh** button works  
   - Covered by Playwright checklist test invoking refresh control.
 
