@@ -28,3 +28,18 @@ test("uploads and lists a PDF", async ({ page }) => {
   await firstDataRow.getByRole("button", { name: "Remove" }).click();
   await expect(page.getByText(/removed "sample\.pdf"/i)).toBeVisible();
 });
+
+test("shows validation error for unsupported file types", async ({ page }) => {
+  await page.goto("/");
+
+  const fixturePath = path.resolve(__dirname, "../fixtures/bad.txt");
+  await page.locator('input[type="file"]').first().setInputFiles(fixturePath);
+  await expect(page.getByText(/added 1 file to queue/i)).toBeVisible();
+
+  await page.getByRole("button", { name: /upload queued files/i }).click();
+  await expect(page.getByText(/unsupported format for "bad\.txt"/i)).toBeVisible();
+  await expect(page.getByText("Failed", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: /retry failed/i }).click();
+  await expect(page.getByText("Queued", { exact: true })).toBeVisible();
+});
