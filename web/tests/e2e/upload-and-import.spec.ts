@@ -106,3 +106,22 @@ test("supports queue remove and clear-completed controls", async ({ page }) => {
   await clearCompletedButton.click();
   await expect(page.getByRole("heading", { name: /upload queue/i })).toHaveCount(0);
 });
+
+test.describe("mobile viewport sanity", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("renders uploader and mobile cards on small screens", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: /upload scores fast/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^choose files$/i })).toBeVisible();
+
+    const fixturePath = path.resolve(__dirname, "../fixtures/sample.pdf");
+    await page.locator('input[type="file"]').first().setInputFiles(fixturePath);
+    await page.getByRole("button", { name: /upload queued files/i }).click();
+    await expect(page.getByText(/uploaded 1 file/i)).toBeVisible();
+
+    // On mobile widths we render card-style rows instead of desktop table.
+    await expect(page.getByRole("button", { name: "Remove" }).first()).toBeVisible();
+    await expect(page.getByText(/sample\.pdf/i).first()).toBeVisible();
+  });
+});

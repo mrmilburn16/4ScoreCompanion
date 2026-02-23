@@ -52,6 +52,8 @@ npm run build
 
 Manual/interaction QA checklist: `./QA_CHECKLIST.md`
 
+Playwright coverage includes desktop interaction flows and a mobile viewport sanity pass.
+
 ## API routes
 
 - `GET /api/files` — list stored files
