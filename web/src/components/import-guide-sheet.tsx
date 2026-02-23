@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 type ImportGuideSheetProps = {
   open: boolean;
@@ -18,21 +17,19 @@ const STEPS = [
 ];
 
 export function ImportGuideSheet({ open, onClose, isIOS }: ImportGuideSheetProps) {
+  if (!open) {
+    return null;
+  }
+
   return (
     <div
-      className={cn(
-        "pointer-events-none fixed inset-0 z-50 flex items-end justify-center bg-black/20 p-3 opacity-0 transition-all md:items-center",
-        open && "pointer-events-auto opacity-100",
-      )}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 p-3 opacity-100 transition-all md:items-center"
       role="dialog"
       aria-modal="true"
-      aria-hidden={!open}
+      aria-hidden={false}
     >
       <section
-        className={cn(
-          "w-full max-w-2xl translate-y-8 rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl transition-all duration-200 dark:border-zinc-800 dark:bg-zinc-950",
-          open && "translate-y-0",
-        )}
+        className="w-full max-w-2xl translate-y-0 rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl transition-all duration-200 dark:border-zinc-800 dark:bg-zinc-950"
       >
         <header className="mb-4 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-600 dark:text-sky-300">

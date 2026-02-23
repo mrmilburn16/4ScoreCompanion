@@ -29,6 +29,31 @@ test("uploads and lists a PDF", async ({ page }) => {
   await expect(page.getByText(/removed "sample\.pdf"/i)).toBeVisible();
 });
 
+test("exercises checklist modal and key controls", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: /how to import into forscore/i }).click();
+  const guideDialog = page.locator('[role="dialog"][aria-hidden="false"]');
+  await expect(guideDialog.getByRole("heading", { name: /send to forscore/i })).toBeVisible();
+  await guideDialog.getByRole("button", { name: "Got it" }).click();
+  await expect(page.locator('[role="dialog"][aria-hidden="false"]')).toHaveCount(0);
+
+  await page.getByRole("button", { name: /open import checklist/i }).click();
+  const secondGuideDialog = page.locator('[role="dialog"][aria-hidden="false"]');
+  await expect(secondGuideDialog.getByRole("heading", { name: /send to forscore/i })).toBeVisible();
+  await secondGuideDialog.getByRole("button", { name: "Got it" }).click();
+
+  const browseChooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: /browse device/i }).click();
+  await browseChooser;
+
+  const chooseChooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: /^choose files$/i }).click();
+  await chooseChooser;
+
+  await page.getByRole("button", { name: /refresh/i }).click();
+});
+
 test("shows validation error for unsupported file types", async ({ page }) => {
   await page.goto("/");
 
