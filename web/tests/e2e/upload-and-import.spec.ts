@@ -2,7 +2,8 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
-test("uploads and lists a PDF", async ({ page }) => {
+test("uploads and lists a PDF", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /upload scores fast/i })).toBeVisible();
 
@@ -23,6 +24,9 @@ test("uploads and lists a PDF", async ({ page }) => {
 
   await firstDataRow.getByRole("button", { name: "Share" }).click();
   await expect(page.getByText(/share is unavailable|cannot share/i)).toBeVisible();
+
+  await firstDataRow.getByRole("button", { name: "Copy Link" }).click();
+  await expect(page.getByText(/download link copied/i)).toBeVisible();
 
   page.once("dialog", (dialog) => dialog.accept());
   await firstDataRow.getByRole("button", { name: "Remove" }).click();
@@ -52,6 +56,10 @@ test("exercises checklist modal and key controls", async ({ page }) => {
   await chooseChooser;
 
   await page.getByRole("button", { name: /refresh/i }).click();
+
+  await page.getByLabel("Search files").fill("sample");
+  await page.getByLabel("Type").selectOption("pdf");
+  await page.getByLabel("Sort").selectOption("name");
 });
 
 test("shows validation error for unsupported file types", async ({ page }) => {

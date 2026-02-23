@@ -9,15 +9,11 @@ import { UploadDropzone } from "@/components/upload-dropzone";
 import { UploadQueue, type UploadQueueItem } from "@/components/upload-queue";
 import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
+import { ToastStack, type ToastItem, type ToastTone } from "@/components/ui/toast-stack";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { useIOSDetection } from "@/hooks/use-ios-detection";
 import { shareStoredFile } from "@/lib/ios/share";
 import type { StoredFileRecord } from "@/types/file";
-
-type Banner = {
-  tone: "success" | "warning" | "error";
-  message: string;
-};
 
 function buildDownloadUrl(id: string) {
   return `/api/files/${id}/download`;
@@ -42,35 +38,32 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [fileTypeFilter, setFileTypeFilter] = useState<"all" | "pdf" | "4sc" | "4ss">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "size">("newest");
-  const [banner, setBanner] = useState<Banner | null>(null);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [guideOpen, setGuideOpen] = useState(false);
   const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
   const [activeUploadController, setActiveUploadController] = useState<AbortController | null>(null);
   const { isIOS, isTouchDevice } = useIOSDetection();
   const { isUploading, lastError, uploadFiles } = useFileUpload();
 
-  const bannerClassName = useMemo(() => {
-    if (!banner) {
-      return "";
-    }
-
-    if (banner.tone === "success") {
-      return "border-emerald-300 bg-emerald-100/80 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-100";
-    }
-
-    if (banner.tone === "warning") {
-      return "border-amber-300 bg-amber-100/80 text-amber-900 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100";
-    }
-
-    return "border-rose-300 bg-rose-100/80 text-rose-900 dark:border-rose-700 dark:bg-rose-900/40 dark:text-rose-100";
-  }, [banner]);
-
-  const setBusy = (key: string, busy: boolean) => {
+  const setBusy = useCallback((key: string, busy: boolean) => {
     setActionBusy((previous) => ({
       ...previous,
       [key]: busy,
     }));
-  };
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((previous) => previous.filter((toast) => toast.id !== id));
+  }, []);
+
+  const notify = useCallback(
+    (tone: ToastTone, message: string) => {
+      const id = typeof crypto !== "undefined" ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+      setToasts((previous) => [...previous, { id, tone, message }]);
+      window.setTimeout(() => dismissToast(id), 5000);
+    },
+    [dismissToast],
+  );
 
   const visibleFiles = useMemo(() => {
     const searchValue = searchQuery.trim().toLowerCase();
@@ -110,14 +103,11 @@ export default function Home() {
 
       setFiles(payload.files ?? []);
     } catch (error) {
-      setBanner({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Could not load your library.",
-      });
+      notify("error", error instanceof Error ? error.message : "Could not load your library.");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     void loadFiles();
@@ -135,20 +125,17 @@ export default function Home() {
         .map(buildQueueItem);
 
       if (additions.length === 0) {
-        setBanner({
-          tone: "warning",
-          message: "Those files are already in your upload queue.",
-        });
+        notify("warning", "Those files are already in your upload queue.");
         return;
       }
 
       setQueue((previous) => [...previous, ...additions]);
-      setBanner({
-        tone: "success",
-        message: `Added ${additions.length} file${additions.length === 1 ? "" : "s"} to queue.`,
-      });
+      notify(
+        "success",
+        `Added ${additions.length} file${additions.length === 1 ? "" : "s"} to queue.`,
+      );
     },
-    [queue],
+    [notify, queue],
   );
 
   const onUploadQueued = useCallback(async () => {
@@ -158,10 +145,7 @@ export default function Home() {
 
     const queuedItems = queue.filter((item) => item.status === "queued");
     if (queuedItems.length === 0) {
-      setBanner({
-        tone: "warning",
-        message: "No queued files to upload.",
-      });
+      notify("warning", "No queued files to upload.");
       return;
     }
 
@@ -235,25 +219,22 @@ export default function Home() {
       );
 
       if (result.uploaded.length > 0 && result.rejected.length === 0) {
-        setBanner({
-          tone: "success",
-          message: `Uploaded ${result.uploaded.length} file${result.uploaded.length === 1 ? "" : "s"} successfully.`,
-        });
+        notify(
+          "success",
+          `Uploaded ${result.uploaded.length} file${result.uploaded.length === 1 ? "" : "s"} successfully.`,
+        );
         return;
       }
 
       if (result.uploaded.length > 0 && result.rejected.length > 0) {
-        setBanner({
-          tone: "warning",
-          message: `Uploaded ${result.uploaded.length} file(s), but ${result.rejected.length} file(s) were rejected.`,
-        });
+        notify(
+          "warning",
+          `Uploaded ${result.uploaded.length} file(s), but ${result.rejected.length} file(s) were rejected.`,
+        );
         return;
       }
 
-      setBanner({
-        tone: "error",
-        message: result.rejected[0]?.error ?? "Upload failed for all queued files.",
-      });
+      notify("error", result.rejected[0]?.error ?? "Upload failed for all queued files.");
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         setQueue((previous) =>
@@ -263,10 +244,7 @@ export default function Home() {
               : item,
           ),
         );
-        setBanner({
-          tone: "warning",
-          message: "Upload cancelled.",
-        });
+        notify("warning", "Upload cancelled.");
       } else {
         const message = error instanceof Error ? error.message : "Upload failed.";
         setQueue((previous) =>
@@ -276,15 +254,12 @@ export default function Home() {
               : item,
           ),
         );
-        setBanner({
-          tone: "error",
-          message,
-        });
+        notify("error", message);
       }
     } finally {
       setActiveUploadController(null);
     }
-  }, [isUploading, loadFiles, queue, uploadFiles]);
+  }, [isUploading, loadFiles, notify, queue, uploadFiles]);
 
   const onCancelUpload = useCallback(() => {
     activeUploadController?.abort();
@@ -317,11 +292,8 @@ export default function Home() {
     link.click();
     link.remove();
     setBusy(`download-${file.id}`, false);
-    setBanner({
-      tone: "success",
-      message: `Downloaded "${file.originalName}".`,
-    });
-  }, []);
+    notify("success", `Downloaded "${file.originalName}".`);
+  }, [notify, setBusy]);
 
   const onShare = useCallback(async (file: StoredFileRecord) => {
     setBusy(`share-${file.id}`, true);
@@ -329,39 +301,29 @@ export default function Home() {
     setBusy(`share-${file.id}`, false);
 
     if (outcome.shared) {
-      setBanner({
-        tone: "success",
-        message: `Share sheet opened for "${file.originalName}".`,
-      });
+      notify("success", `Share sheet opened for "${file.originalName}".`);
       return;
     }
 
-    setBanner({
-      tone: "warning",
-      message:
-        outcome.reason ??
+    notify(
+      "warning",
+      outcome.reason ??
         "Sharing is unavailable in this browser. Use Download, then choose forScore in iOS share options.",
-    });
-  }, []);
+    );
+  }, [notify, setBusy]);
 
   const onCopyLink = useCallback(async (file: StoredFileRecord) => {
     setBusy(`copy-${file.id}`, true);
     try {
       const url = `${window.location.origin}${buildDownloadUrl(file.id)}`;
       await navigator.clipboard.writeText(url);
-      setBanner({
-        tone: "success",
-        message: "Download link copied.",
-      });
+      notify("success", "Download link copied.");
     } catch {
-      setBanner({
-        tone: "error",
-        message: "Could not copy link in this browser.",
-      });
+      notify("error", "Could not copy link in this browser.");
     } finally {
       setBusy(`copy-${file.id}`, false);
     }
-  }, []);
+  }, [notify, setBusy]);
 
   const onDelete = useCallback(async (file: StoredFileRecord) => {
     const confirmed = window.confirm(`Remove "${file.originalName}" from this library?`);
@@ -377,22 +339,17 @@ export default function Home() {
         throw new Error(payload.error ?? "Delete failed.");
       }
       await loadFiles();
-      setBanner({
-        tone: "success",
-        message: `Removed "${file.originalName}".`,
-      });
+      notify("success", `Removed "${file.originalName}".`);
     } catch (error) {
-      setBanner({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Delete failed.",
-      });
+      notify("error", error instanceof Error ? error.message : "Delete failed.");
     } finally {
       setBusy(`delete-${file.id}`, false);
     }
-  }, [loadFiles]);
+  }, [loadFiles, notify, setBusy]);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-[#09090c] dark:text-zinc-100">
+      <ToastStack items={toasts} onDismiss={dismissToast} />
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 md:px-6 md:py-10">
         <header className="relative overflow-hidden rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xl shadow-zinc-300/20 dark:border-zinc-800 dark:bg-zinc-950/70 dark:shadow-black/20 md:p-8">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(56,189,248,0.2),transparent_52%)]" />
@@ -418,13 +375,7 @@ export default function Home() {
           </div>
         </header>
 
-        {banner && (
-          <aside className={`rounded-2xl border px-4 py-3 text-sm font-medium ${bannerClassName}`}>
-            {banner.message}
-          </aside>
-        )}
-
-        {lastError && !banner && (
+        {lastError && (
           <aside className="rounded-2xl border border-rose-300 bg-rose-100/80 px-4 py-3 text-sm font-medium text-rose-900 dark:border-rose-700 dark:bg-rose-900/40 dark:text-rose-100">
             {lastError}
           </aside>

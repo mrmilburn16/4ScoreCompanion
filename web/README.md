@@ -22,6 +22,8 @@ App URL: `http://localhost:3002`
   - Clear completed queue entries
 - Supported formats: PDF, 4SC, 4SS
 - Upload validation (type, size, count)
+- Toast-based status notifications
+- Route/global error boundaries for resilient failure handling
 - File library with:
   - Search, type filtering, and sorting
   - Download

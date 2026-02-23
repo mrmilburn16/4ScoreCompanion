@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { Button } from "@/components/ui/button";
 
 type ImportGuideSheetProps = {
@@ -17,6 +19,21 @@ const STEPS = [
 ];
 
 export function ImportGuideSheet({ open, onClose, isIOS }: ImportGuideSheetProps) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose, open]);
+
   if (!open) {
     return null;
   }
@@ -27,9 +44,11 @@ export function ImportGuideSheet({ open, onClose, isIOS }: ImportGuideSheetProps
       role="dialog"
       aria-modal="true"
       aria-hidden={false}
+      onMouseDown={onClose}
     >
       <section
         className="w-full max-w-2xl translate-y-0 rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl transition-all duration-200 dark:border-zinc-800 dark:bg-zinc-950"
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="mb-4 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-600 dark:text-sky-300">
