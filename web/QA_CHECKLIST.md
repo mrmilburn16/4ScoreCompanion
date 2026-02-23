@@ -7,6 +7,12 @@ This checklist verifies the key interactive controls requested in the implementa
 - App URL: `http://localhost:3002`
 - Browser automation: Playwright (Chromium)
 
+## Browser matrix notes
+
+- Desktop Chrome (Linux CI / local): automated via Playwright ✅
+- Desktop Safari (macOS): manual smoke test recommended (upload, download, copy link)
+- Mobile Safari on iOS: manual smoke test recommended (upload flow + share sheet to forScore)
+
 ## Button-by-button results
 
 - [x] Upload area click opens picker  
@@ -44,3 +50,14 @@ npm run test:unit
 npm run test:e2e
 npm run build
 ```
+
+## iOS real-device handoff script (manual)
+
+1. Open app on iPhone/iPad Safari.
+2. Upload a small PDF using **Choose Files**.
+3. Tap **Upload queued files**.
+4. In file list, tap **Share** (or **Download**).
+5. In iOS share sheet:
+   - choose **forScore**, or
+   - tap **More** and add forScore to favorites first.
+6. Confirm file appears in forScore library.

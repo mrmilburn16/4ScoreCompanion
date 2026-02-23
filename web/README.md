@@ -41,6 +41,15 @@ This app implements the best practical flow:
 2. Download or Share file on iOS.
 3. Choose forScore in the iOS share sheet.
 
+## iOS manual verification
+
+Use a real iPhone/iPad for final handoff validation:
+
+1. Open the app in Safari.
+2. Upload a PDF (or 4SC/4SS).
+3. Use Share/Download from the file row.
+4. Pick forScore from the share sheet.
+
 ## Testing
 
 ```bash
